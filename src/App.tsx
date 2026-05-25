@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchInitialOrders } from "./api";
 import { FilterBar } from "./components/FilterBar";
 import { Header } from "./components/Header";
@@ -14,6 +14,8 @@ const EMPTY_FILTERS: Filters = {
   restaurantName: null,
 };
 
+export const MAX_ORDERS_IN_MEMORY = 500;
+
 export function App() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
@@ -23,7 +25,7 @@ export function App() {
     let cancelled = false;
     fetchInitialOrders()
       .then((initial) => {
-        if (!cancelled) setOrders(initial);
+        if (!cancelled) setOrders(initial.slice(0, MAX_ORDERS_IN_MEMORY));
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -35,13 +37,16 @@ export function App() {
     };
   }, []);
 
-  const { status } = useOrderStream((order: Order) => {
-    setOrders((prev) => [order, ...prev]);
-  });
+  const handleOrder = useCallback((order: Order) => {
+    setOrders((prev) => [order, ...prev].slice(0, MAX_ORDERS_IN_MEMORY));
+  }, []);
 
-  const restaurants = Array.from(
-    new Set(orders.map((o) => o.restaurantName)),
-  ).sort();
+  const { status } = useOrderStream(handleOrder);
+
+  const restaurants = useMemo(
+    () => Array.from(new Set(orders.map((o) => o.restaurantName))).sort(),
+    [orders],
+  );
 
   return (
     <div className="app">

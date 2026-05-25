@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import type { Filters, Order } from "../types";
 import { OrderRow } from "./OrderRow";
 import "./OrderList.css";
@@ -6,6 +7,11 @@ interface Props {
   orders: Order[];
   filters: Filters;
 }
+
+const CURRENCY_FMT = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
 
 function matchesFilters(order: Order, filters: Filters): boolean {
   if (filters.restaurantName && order.restaurantName !== filters.restaurantName) {
@@ -24,16 +30,19 @@ function matchesFilters(order: Order, filters: Filters): boolean {
   return true;
 }
 
-export function OrderList({ orders, filters }: Props) {
-  const filtered = orders
-    .filter((o) => matchesFilters(o, filters))
-    .sort((a, b) => b.total - a.total);
+function OrderListBase({ orders, filters }: Props) {
+  const filtered = useMemo(
+    () =>
+      orders
+        .filter((o) => matchesFilters(o, filters))
+        .sort((a, b) => b.total - a.total),
+    [orders, filters],
+  );
 
-  const totalRevenue = filtered.reduce((sum, o) => sum + o.total, 0);
-  const currency = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  });
+  const totalRevenue = useMemo(
+    () => filtered.reduce((sum, o) => sum + o.total, 0),
+    [filtered],
+  );
 
   return (
     <section className="order-list">
@@ -44,7 +53,7 @@ export function OrderList({ orders, filters }: Props) {
             <strong>{filtered.length}</strong> shown
           </span>
           <span>
-            <strong>{currency.format(totalRevenue / 100)}</strong> revenue
+            <strong>{CURRENCY_FMT.format(totalRevenue / 100)}</strong> revenue
           </span>
         </div>
       </header>
@@ -59,3 +68,5 @@ export function OrderList({ orders, filters }: Props) {
     </section>
   );
 }
+
+export const OrderList = memo(OrderListBase);
