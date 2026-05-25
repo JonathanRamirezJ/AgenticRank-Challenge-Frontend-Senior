@@ -41,7 +41,7 @@ export function App() {
     setOrders((prev) => [order, ...prev].slice(0, MAX_ORDERS_IN_MEMORY));
   }, []);
 
-  const { status } = useOrderStream(handleOrder);
+  const { status, isStale } = useOrderStream(handleOrder);
 
   const restaurants = useMemo(
     () => Array.from(new Set(orders.map((o) => o.restaurantName))).sort(),
@@ -50,7 +50,7 @@ export function App() {
 
   return (
     <div className="app">
-      <Header status={status} />
+      <Header status={status} isStale={isStale} />
       <main className="app__main">
         {loadError ? (
           <div className="app__error">Failed to load orders: {loadError}</div>
