@@ -35,4 +35,19 @@ describe("FilterBar", () => {
     render(<FilterBar restaurants={[]} onChange={() => {}} />);
     expect(screen.getByPlaceholderText(/search/i)).toHaveValue("pizza");
   });
+
+  it("falls back to defaults when persisted JSON is malformed", () => {
+    localStorage.setItem("liveboard:filters:v1", "{not-json");
+    render(<FilterBar restaurants={[]} onChange={() => {}} />);
+    expect(screen.getByPlaceholderText(/search/i)).toHaveValue("");
+  });
+
+  it("ignores persisted entries with the wrong shape", () => {
+    localStorage.setItem(
+      "liveboard:filters:v1",
+      JSON.stringify({ query: 42, statuses: "pending", restaurantName: [] }),
+    );
+    render(<FilterBar restaurants={[]} onChange={() => {}} />);
+    expect(screen.getByPlaceholderText(/search/i)).toHaveValue("");
+  });
 });
