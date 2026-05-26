@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import {
   Area,
   AreaChart,
@@ -21,8 +22,7 @@ interface Bucket {
 function bucketByMinute(orders: Order[]): Bucket[] {
   const buckets = new Map<string, number>();
   for (const o of orders) {
-    const placedAt = o.status.kind === "cancelled" ? o.status.placedAt : o.status.placedAt;
-    const d = new Date(placedAt);
+    const d = new Date(o.status.placedAt);
     d.setSeconds(0, 0);
     const key = d.toISOString();
     buckets.set(key, (buckets.get(key) ?? 0) + 1);
@@ -37,8 +37,8 @@ function bucketByMinute(orders: Order[]): Bucket[] {
   return out.slice(-30);
 }
 
-export function OrdersPerMinuteChart({ orders }: Props) {
-  const data = bucketByMinute(orders);
+function OrdersPerMinuteChartBase({ orders }: Props) {
+  const data = useMemo(() => bucketByMinute(orders), [orders]);
 
   return (
     <section className="chart">
@@ -79,3 +79,5 @@ export function OrdersPerMinuteChart({ orders }: Props) {
     </section>
   );
 }
+
+export const OrdersPerMinuteChart = memo(OrdersPerMinuteChartBase);

@@ -15,14 +15,62 @@ const STATUS_OPTIONS: StatusKind[] = [
   "cancelled",
 ];
 
+const STORAGE_KEY = "liveboard:filters:v1";
+
+function isStatusKind(value: unknown): value is StatusKind {
+  return (
+    typeof value === "string" &&
+    (STATUS_OPTIONS as readonly string[]).includes(value)
+  );
+}
+
+function readPersistedFilters(): Filters | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === null) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed === null || typeof parsed !== "object") return null;
+    const obj = parsed as Record<string, unknown>;
+
+    const query = typeof obj.query === "string" ? obj.query : "";
+    const statuses = Array.isArray(obj.statuses)
+      ? obj.statuses.filter(isStatusKind)
+      : [];
+    const restaurantName =
+      typeof obj.restaurantName === "string" ? obj.restaurantName : null;
+
+    return { query, statuses, restaurantName };
+  } catch {
+    return null;
+  }
+}
+
+function writePersistedFilters(filters: Filters): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+  } catch {
+    // Quota errors or unavailable storage — persistence is best-effort.
+  }
+}
+
 export function FilterBar({ restaurants, onChange }: Props) {
-  const [query, setQuery] = useState("");
-  const [statuses, setStatuses] = useState<StatusKind[]>([]);
-  const [restaurantName, setRestaurantName] = useState<string | null>(null);
+  const [query, setQuery] = useState<string>(
+    () => readPersistedFilters()?.query ?? "",
+  );
+  const [statuses, setStatuses] = useState<StatusKind[]>(
+    () => readPersistedFilters()?.statuses ?? [],
+  );
+  const [restaurantName, setRestaurantName] = useState<string | null>(
+    () => readPersistedFilters()?.restaurantName ?? null,
+  );
 
   useEffect(() => {
     onChange({ query, statuses, restaurantName });
   }, [query, statuses, restaurantName, onChange]);
+
+  useEffect(() => {
+    writePersistedFilters({ query, statuses, restaurantName });
+  }, [query, statuses, restaurantName]);
 
   function toggleStatus(kind: StatusKind) {
     setStatuses((prev) =>

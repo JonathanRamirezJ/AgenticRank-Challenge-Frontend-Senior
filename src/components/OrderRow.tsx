@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Order, StatusKind } from "../types";
 
 interface Props {
@@ -11,6 +12,19 @@ const STATUS_CLASS: Record<StatusKind, string> = {
   delivered: "order-row__badge--delivered",
   cancelled: "order-row__badge--cancelled",
 };
+
+const CURRENCY_FMT = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
+const DATE_FMT = new Intl.DateTimeFormat("en-US", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  month: "short",
+  day: "numeric",
+});
 
 function statusTimestamp(order: Order): string {
   switch (order.status.kind) {
@@ -27,22 +41,9 @@ function statusTimestamp(order: Order): string {
   }
 }
 
-export function OrderRow({ order }: Props) {
-  const currency = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  });
-  const dateFmt = new Intl.DateTimeFormat("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    month: "short",
-    day: "numeric",
-  });
-
-  const ts = new Date(statusTimestamp(order)).toLocaleString("en-US");
-  const formattedTotal = currency.format(order.total / 100);
-  const formattedTs = dateFmt.format(new Date(ts));
+function OrderRowBase({ order }: Props) {
+  const formattedTotal = CURRENCY_FMT.format(order.total / 100);
+  const formattedTs = DATE_FMT.format(new Date(statusTimestamp(order)));
   const itemSummary = order.items
     .map((it) => `${it.quantity}× ${it.name}`)
     .join(", ");
@@ -69,3 +70,5 @@ export function OrderRow({ order }: Props) {
     </li>
   );
 }
+
+export const OrderRow = memo(OrderRowBase);
